@@ -1,0 +1,150 @@
+#!/usr/bin/env perl
+
+##
+# fguardian is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# fguardian is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with fguardian. If not, see <http://www.gnu.org/licenses/>.
+##
+
+#################################
+############## fguardian v 1.0
+################################
+
+##
+# Description: move files that are not html or css checking extension and a valid html and css structure. It may be usefull in servers that run web services.
+#
+# @author: El Chacal Del Útero <http://www.elchacaldelutero.com/>
+#
+# @version: 1.0
+#
+# @created: 20111102
+#
+##
+
+#core modules
+use warnings;
+use strict;
+use File::Find;
+use File::Path;
+
+#vars
+my $folder;
+my $removed_folder;
+my @moved;
+
+#debug vars
+my $clean_mode = 0; # 0 PERFORM file movement actions ; 1 PREVENT file movement actions
+
+##################do magic
+
+sub check_file
+{
+  my $f = $File::Find::name;
+  my $d = $File::Find::dir;
+  if(!-d $f)
+  {
+    if(&file_name($f) == 0)
+    {
+      my $html = &file_content($f); $html = &file_content_html($html);
+      my $css = &file_content($f); $css = &file_content_css($css);
+      if($html == 0 || $css == 0)
+      {
+       return 0;
+      }
+    }
+    &move_file($f, $d);
+    return 1;
+  }
+}
+
+sub move_file
+{
+  my $f = $_[0];
+  my $d = &control_double_slash("$removed_folder$_[1]");
+  my $m = "$d/$_";
+  if(!-d $d)
+  {
+    mkpath($d) if($clean_mode == 0);
+  }
+  push(@moved, "$f -> $m");
+  rename($f, $m) if($clean_mode == 0);
+}
+
+sub control_double_slash
+{
+  $_[0] =~ s{\/\/}{\/};
+  return $_[0];
+}
+
+sub get_date
+{
+  my ($sec, $min ,$hour ,$mday ,$mon ,$year ,$wday ,$yday ,$isdst) = localtime(time);
+  return ($year+1900).($mon+1).$mday.$hour.$min.$sec;
+}
+
+sub create_log
+{
+  open (my $fh, '>'.$removed_folder.'/'.&get_date().'.log');
+  foreach my $f (@moved){print $fh $f."\n";}
+  close $fh;
+}
+
+sub file_name
+{
+  return (!-B $_ && $_ =~ m/\.((x)?htm(l)?|css|jp(e)?g|gif|png)/) ? 0 : 1;
+}
+
+sub file_content
+{
+  open(FILE, $_[0]);
+  my $content = "";
+  while (<FILE>)
+  {
+   $content .= $_;
+  }
+  close(FILE);
+  return $content;
+}
+
+sub file_content_html
+{
+  return ($_[0] =~ m/<html(.+)?>(\s+.*)*<\/html>/) ? 0 : 1;
+}
+
+sub file_content_css
+{
+  return ($_[0] =~ m/(#|\.)?\w.+(\s)?{(\s+\w.+)*(\s+)?}/) ? 0 : 1;
+}
+
+sub main()
+{
+  &finddepth({wanted => \&check_file}, $folder);
+}
+
+if(scalar(@ARGV) == 2)
+{
+  $folder = $ARGV[0];
+  $removed_folder = $ARGV[1];  
+  if($folder =~ m/^\// && $removed_folder =~ m/^\//)
+  {
+    &main();
+    &create_log() if(scalar(@moved) > 0)
+  }
+  else
+  {
+    print "\nPlease enter ABSOLUTE PATHS!\n\n";
+  }
+}
+else
+{
+  print "\nWrong arguments!\n\n";
+}
