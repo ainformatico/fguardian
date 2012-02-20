@@ -22,7 +22,7 @@
 ##
 # Description: move files that are not html or css checking extension and a valid html and css structure. It may be usefull in servers that run web services.
 #
-# @author: El Chacal Del Útero <http://www.elchacaldelutero.com/>
+# @author: Alejandro El Informático <https://github.com/ainformatico/fguardian>
 #
 # @version: 1.0
 #

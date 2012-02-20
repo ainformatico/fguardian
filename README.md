@@ -19,7 +19,7 @@ It may be usefull in servers that run web services.
 
 Author
 -------------------------------
-El Chacal Del Útero
+Alejandro El Informático
 
 Requirements
 -------------------------------
